@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leads Table</title>
+  <!-- Include Materialize CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <!-- Include Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <style>
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+      height: 20px;
+      margin: 8px 0;
+    }
+    @keyframes shimmer {
+      from {
+        background-position: 200% 0;
+      }
+      to {
+        background-position: -200% 0;
+      }
+    }
+    .table-container {
+      margin: 20px auto;
+      max-width: 900px;
+    }
+    .search-bar {
+      margin: 20px auto;
+      max-width: 900px;
+    }
+    .icon{
+       width: 30px !important;
+        height: 30px !important;
+        border-radius: 100px;
+        background-color: #cccccc3b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .icon a{
+        color: #0c0c0c !important;
+    }
+    th{
+        color: rgb(232, 113, 1);
+    }
+    #total{
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    header{
+        border-bottom: 1px solid #ccc;
+        padding: 10px;
+    }
+    header img{
+        width: 150px;
+    }
+  </style>
+</head>
+<body>
+    <header>
+        <img src="https://bepractical.s3.us-east-2.amazonaws.com/brand-logo.cc6e3cf088a8fd3005b1.jpg" alt="">
+    </header>
+  <div class="container">
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <input id="searchInput" type="text" placeholder="Search leads by name, email, or course" oninput="filterLeads()" class="input-field">
+    </div>
+    <h1 id="total"> <i class="fa-solid fa-user-group"></i>Fullstack landing page Total Leads: </h1>
+    <hr>
+
+    <!-- Leads Table -->
+    <div class="table-container">
+      <table class="striped">
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Phone Number</th>
+            <th>Experience</th>
+            <th>Course</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leadsTable">
+          <!-- Loading Skeleton Rows -->
+          <tr class="skeleton-row">
+            <td colspan="6">
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+              <div class="skeleton"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Include Materialize JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    const apiUrl = "https://fullstack-backend.be-practical.com/api/get/leads";
+    const leadsTable = document.getElementById("leadsTable");
+    const total = document.getElementById('total')
+
+    // Fetch leads from API
+    async function fetchLeads() {
+      try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        total.innerHTML += ' ' + data.data.length; 
+        displayLeads(data.data.reverse());
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+      }
+    }
+
+    // Display leads in the table
+    function displayLeads(leads) {
+      leadsTable.innerHTML = leads.map(lead => `
+        <tr>
+          <td>${lead.fullname}</td>
+          <td>${lead.email}</td>
+          <td>${lead.phonenumber}</td>
+          <td>${lead.experience}</td>
+          <td>${lead.course}</td>
+          <td>
+            <!-- Font Awesome Menu Icon for Dropdown -->
+          <div class="icon">
+              <a href="javascript:void(0);" class="dropdown-trigger " data-target="dropdown-${lead._id}">
+              <i class="fas fa-ellipsis-v"></i> <!-- Font Awesome icon -->
+            </a>
+            </div>
+
+            <!-- Dropdown for options -->
+            <ul id="dropdown-${lead._id}" class="dropdown-content">
+              <li><a href="javascript:void(0);" onclick="copyToClipboard('${lead.phonenumber}')">Copy Phone Number</a></li>
+              <li><a href="javascript:void(0);" onclick="copyCompleteData('${lead.fullname}', '${lead.email}', '${lead.phonenumber}', '${lead.experience}', '${lead.course}')">Copy Complete Data</a></li>
+              <li><a href="javascript:void(0);" onclick="callLead('${lead.phonenumber}')">Call</a></li>
+            </ul>
+          </td>
+        </tr>
+      `).join('');
+
+      // Initialize dropdown manually after content is loaded
+      const dropdownElems = document.querySelectorAll('.dropdown-trigger');
+      const dropdownInstances = M.Dropdown.init(dropdownElems, {
+        hover: true, // Hover to open dropdown
+        coverTrigger: false, // Dropdown will cover trigger
+      });
+    }
+
+    // Call lead function
+    function callLead(phone) {
+      window.location.href = `tel:${phone}`;
+    }
+
+    // Copy to clipboard function
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      }).catch(err => {
+        console.error("Failed to copy text: ", err);
+      });
+    }
+
+    // Copy complete data
+    function copyCompleteData(name, email, phone, experience, course) {
+      const completeData = `Full Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nExperience: ${experience}\nCourse: ${course}`;
+      navigator.clipboard.writeText(completeData).then(() => {
+        alert("Complete data copied to clipboard!");
+      }).catch(err => {
+        console.error("Failed to copy complete data: ", err);
+      });
+    }
+
+    // Filter leads
+    function filterLeads() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("#leadsTable tr");
+      rows.forEach(row => {
+        const cells = row.querySelectorAll("td");
+        const match = Array.from(cells).some(cell => cell.innerText.toLowerCase().includes(query));
+        row.style.display = match ? "" : "none";
+      });
+    }
+
+    // Load leads on page load
+    fetchLeads();
+  </script>
+</body>
+</html>
